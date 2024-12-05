@@ -1,0 +1,189 @@
+package UI;
+import javax.swing.*;
+import java.awt.*;
+import java.io.*;
+import java.util.*;
+import java.util.List;
+
+public class GestorMusica {
+
+    static class Cancion {
+        String titulo;
+        Artista artista;
+
+        public Cancion(String titulo, Artista artista) {
+            this.titulo = titulo;
+            this.artista = artista;
+        }
+
+        @Override
+        public String toString() {
+            return titulo + " - " + artista.nombre;
+        }
+    }
+
+    static class Artista {
+        String nombre;
+
+        public Artista(String nombre) {
+            this.nombre = nombre;
+        }
+    }
+
+    static class ListaReproduccion {
+        String nombre;
+        List<Cancion> canciones;
+
+        public ListaReproduccion(String nombre) {
+            this.nombre = nombre;
+            this.canciones = new ArrayList<>();
+        }
+
+        public void agregarCancion(Cancion cancion) {
+            canciones.add(cancion);
+        }
+
+        @Override
+        public String toString() {
+            return nombre + " (" + canciones.size() + " canciones)";
+        }
+    }
+
+    public static class GestorColeccionesMusica {
+        private List<ListaReproduccion> listas;
+        private List<Artista> artistas;
+
+        public GestorColeccionesMusica() {
+            listas = new ArrayList<>();
+            artistas = new ArrayList<>();
+            cargarListasDesdeArchivo();
+        }
+
+        private void cargarListasDesdeArchivo() {
+            // Simulamos la carga desde un archivo
+            try (BufferedReader br = new BufferedReader(new FileReader("listas.txt"))) {
+                String linea;
+                while ((linea = br.readLine()) != null) {
+                    ListaReproduccion lista = new ListaReproduccion(linea);
+                    listas.add(lista);
+                }
+            } catch (IOException e) {
+                System.out.println("Error al cargar las listas: " + e.getMessage());
+            }
+        }
+
+        public void crearListaReproduccion(String nombre) {
+            listas.add(new ListaReproduccion(nombre));
+        }
+
+        public void crearArtista(String nombre) {
+            artistas.add(new Artista(nombre));
+        }
+
+        public void crearCancion(String titulo, Artista artista) {
+            if (artista != null) {
+                Cancion cancion = new Cancion(titulo, artista);
+                // Podrías agregar la canción a alguna lista aquí
+            }
+        }
+
+        public void agregarCancionAPlaylist(ListaReproduccion lista, Cancion cancion) {
+            lista.agregarCancion(cancion);
+        }
+
+        // GCM
+        public static void main(String[] args) {
+            GestorColeccionesMusica gestor = new GestorColeccionesMusica();
+            JFrame frame = new JFrame("Gestor de Colecciones de Música");
+            frame.setSize(600, 400);
+            frame.setLayout(new BorderLayout());
+
+            // Panel para gestionar Listas de Reproducción
+            JPanel panelListas = new JPanel();
+            panelListas.setLayout(new BorderLayout());
+
+            DefaultListModel<ListaReproduccion> modeloListas = new DefaultListModel<>();
+            JList<ListaReproduccion> listasJList = new JList<>(modeloListas);
+            panelListas.add(new JScrollPane(listasJList), BorderLayout.CENTER);
+
+            JPanel panelListaBotones = new JPanel();
+            JButton crearListaButton = new JButton("Crear Lista");
+            panelListaBotones.add(crearListaButton);
+            panelListas.add(panelListaBotones, BorderLayout.SOUTH);
+
+            // Panel para gestionar Artistas
+            JPanel panelArtistas = new JPanel();
+            panelArtistas.setLayout(new GridLayout(3, 2, 5, 5));
+
+            JTextField artistaField = new JTextField(10);
+            JButton crearArtistaButton = new JButton("Crear Artista");
+
+            panelArtistas.add(new JLabel("Nombre del Artista:"));
+            panelArtistas.add(artistaField);
+            panelArtistas.add(crearArtistaButton);
+
+            // Panel para gestionar Canciones
+            JPanel panelCanciones = new JPanel();
+            panelCanciones.setLayout(new GridLayout(3, 2, 5, 5));
+
+            JTextField cancionField = new JTextField(10);
+            JComboBox<Artista> artistaComboBox = new JComboBox<>();
+            JButton crearCancionButton = new JButton("Crear Canción");
+
+            panelCanciones.add(new JLabel("Título de la Canción:"));
+            panelCanciones.add(cancionField);
+            panelCanciones.add(new JLabel("Selecciona Artista:"));
+            panelCanciones.add(artistaComboBox);
+            panelCanciones.add(crearCancionButton);
+
+            // Panel Principal
+            JPanel panelPrincipal = new JPanel();
+            panelPrincipal.setLayout(new GridLayout(1, 3, 10, 10));
+            panelPrincipal.add(panelListas);
+            panelPrincipal.add(panelArtistas);
+            panelPrincipal.add(panelCanciones);
+
+            frame.add(panelPrincipal, BorderLayout.CENTER);
+
+            // Acción de Crear Lista
+            crearListaButton.addActionListener(e -> {
+                String nombreLista = JOptionPane.showInputDialog("Ingrese el nombre de la lista:");
+                if (nombreLista != null && !nombreLista.trim().isEmpty()) {
+                    gestor.crearListaReproduccion(nombreLista);
+                    modeloListas.addElement(new ListaReproduccion(nombreLista));
+                }
+            });
+
+            // Acción de Crear Artista
+            crearArtistaButton.addActionListener(e -> {
+                String nombreArtista = artistaField.getText();
+                if (!nombreArtista.trim().isEmpty()) {
+                    gestor.crearArtista(nombreArtista);
+                    artistaComboBox.addItem(new Artista(nombreArtista));
+                    artistaField.setText("");
+                }
+            });
+
+            // Acción de Crear Canción
+            crearCancionButton.addActionListener(e -> {
+                String titulo = cancionField.getText();
+                Artista artistaSeleccionado = (Artista) artistaComboBox.getSelectedItem();
+                if (titulo != null && !titulo.trim().isEmpty() && artistaSeleccionado != null) {
+                    Cancion nuevaCancion = new Cancion(titulo, artistaSeleccionado);
+                    if (!listasJList.isSelectionEmpty()) {
+                        ListaReproduccion listaSeleccionada = listasJList.getSelectedValue();
+                        gestor.agregarCancionAPlaylist(listaSeleccionada, nuevaCancion);
+                        JOptionPane.showMessageDialog(frame, "Canción agregada a la lista de reproducción.");
+                    }
+                    cancionField.setText("");
+                } else {
+                    JOptionPane.showMessageDialog(frame, "Por favor ingresa todos los datos.");
+                }
+            });
+
+            // Finaliza la configuración de la ventana
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setVisible(true);
+        }
+    }
+}
